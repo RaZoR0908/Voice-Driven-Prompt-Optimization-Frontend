@@ -41,6 +41,16 @@ function languageBadge(language) {
   return languageClassMap[label] || languageClassMap.English;
 }
 
+function detectInputLanguage(text) {
+  if (!text) return "English";
+  const hasHindi = /[\u0900-\u097F]/.test(text);
+  const hasHinglish = /[a-zA-Z]/.test(text) && /[\u0900-\u097F]/.test(text);
+  
+  if (hasHinglish) return "Hinglish";
+  if (hasHindi) return "Hindi";
+  return "English";
+}
+
 function buildTimeline(item, backendLogs = []) {
   const logMap = new Map(
     backendLogs.map((log) => [String(log.stepName || "").toUpperCase(), log])
@@ -58,51 +68,51 @@ function buildTimeline(item, backendLogs = []) {
     {
       stepName: "STT",
       decision: sttLog?.decision || "COMPLETED",
-      detail: sttLog?.detail || "Transcribed voice input",
+      detail: sttLog?.detail || "Speech-to-text conversion complete",
+      createdAt: sttLog?.createdAt || item.createdAt,
+    },
+    {
+      stepName: "LANGUAGE DETECTION",
+      decision: "COMPLETED",
+      detail: `Detected: ${detectInputLanguage(rawText)} | Normalized to: English`,
       createdAt: sttLog?.createdAt || item.createdAt,
     },
     {
       stepName: "FILTER",
       decision: rawText !== transcript ? "COMPLETED" : "COMPLETED",
-      detail: rawText !== transcript ? "Removed filler words" : "No filler words removed",
+      detail: rawText !== transcript ? "Removed filler words and cleaned input" : "No filler words found",
       createdAt: sttLog?.createdAt || item.createdAt,
     },
     {
-      stepName: "TRANSLATE",
+      stepName: "NORMALIZATION",
       decision: rawText !== transcript ? "COMPLETED" : "COMPLETED",
-      detail: rawText !== transcript ? "Hindi → English" : "Already English",
+      detail: rawText !== transcript ? "Translated to English" : "Already in English",
       createdAt: sttLog?.createdAt || item.createdAt,
     },
     {
-      stepName: "INTENT",
+      stepName: "INTENT EXTRACTION",
       decision: intentLog?.decision || "COMPLETED",
-      detail: intentLog?.detail || "Extracted intent from transcript",
+      detail: intentLog?.detail || `Extracted intent: ${item.intent || 'general_request'}`,
       createdAt: intentLog?.createdAt || item.createdAt,
     },
     {
-      stepName: "CONFIRM",
+      stepName: "CONFIRMATION",
       decision: item.optimizedPrompt ? "COMPLETED" : "FAILED",
-      detail: item.optimizedPrompt ? "User confirmed" : "User rejected",
+      detail: item.optimizedPrompt ? "User confirmed the extracted intent" : "User rejected",
       createdAt: item.createdAt,
     },
     {
-      stepName: "TRANSFORM",
+      stepName: "PROMPT OPTIMIZATION",
       decision: transformLog?.decision || "COMPLETED",
-      detail: transformLog?.detail || "CAVEMAN MODE applied",
+      detail: transformLog?.detail || "Applied CAVEMAN MODE - token reduction optimized",
       createdAt: transformLog?.createdAt || item.createdAt,
     },
     {
       stepName: "VALIDATION",
       decision: validateLog?.decision || "COMPLETED",
       detail:
-        validateLog?.detail || `Token reduction: ${Number.isFinite(reductionPct) ? reductionPct : 0}%`,
+        validateLog?.detail || `Reduction achieved: ${Number.isFinite(reductionPct) ? reductionPct : 0}%`,
       createdAt: validateLog?.createdAt || item.createdAt,
-    },
-    {
-      stepName: "MEMORY",
-      decision: memoryLog?.decision || "SKIPPED",
-      detail: memoryLog?.detail || "Not saved",
-      createdAt: memoryLog?.createdAt || item.createdAt,
     },
   ];
 }
@@ -144,25 +154,33 @@ export default function HistoryList({ items }) {
         const reductionPct = Number(item.reductionPct || 0);
         const timeline = buildTimeline(item, logsById[item.messageId] || []);
         const domain = String(item.domain || "other").toLowerCase();
-        const language = normalizeLanguageLabel(item.language);
+        const normalizedLanguage = normalizeLanguageLabel(item.language);
+        const detectedLanguage = detectInputLanguage(item.rawText);
+        const rawInput = item.rawText || item.transcript || "";
 
         return (
           <article
             key={item.messageId}
             className="rounded-2xl border border-border bg-surface/80 p-4 backdrop-blur-md transition hover:border-pink/30 hover:shadow-[0_0_18px_rgba(255,45,120,0.12)]"
           >
-            <div className="flex flex-wrap items-start justify-between gap-3">
-              <div className="max-w-3xl">
+            <div className="space-y-4">
+              {/* Raw Input Section */}
+              <div>
                 <p className="font-mono text-xs uppercase tracking-wider text-pink-light">
-                  Raw Input
+                  Original Input ({detectedLanguage})
                 </p>
                 <p className="mt-1 text-sm leading-relaxed text-white/90">
-                  {item.rawText || item.transcript || "No raw input provided"}
+                  {rawInput || "No input provided"}
                 </p>
               </div>
-              <div className="flex flex-col items-end gap-2">
-                <span className={`rounded-full px-3 py-1 text-xs ${languageBadge(language)}`}>
-                  Language: {language}
+
+              {/* Language Badges */}
+              <div className="flex flex-wrap items-center gap-2">
+                <span className={`rounded-full px-3 py-1 text-xs ${languageBadge(detectedLanguage)}`}>
+                  Detected: {detectedLanguage}
+                </span>
+                <span className="rounded-full bg-cyan/20 px-3 py-1 text-xs text-cyan">
+                  Normalized: English
                 </span>
                 <span className={`rounded-full px-3 py-1 text-xs ${domainBadge(domain)}`}>
                   {domain}
@@ -171,18 +189,32 @@ export default function HistoryList({ items }) {
                   {reductionPct}% saved
                 </span>
               </div>
+
+              {/* Normalized Input Section */}
+              {detectedLanguage !== "English" && (
+                <div>
+                  <p className="font-mono text-xs uppercase tracking-wider text-cyan">
+                    Normalized Input (English)
+                  </p>
+                  <p className="mt-1 text-sm leading-relaxed text-white/90">
+                    {item.transcript || "Normalization in progress..."}
+                  </p>
+                </div>
+              )}
             </div>
 
-            <div className="mt-3 rounded-xl border border-pink/20 bg-bg/60 p-3">
+            {/* Optimized Prompt Section */}
+            <div className="mt-4 rounded-xl border border-pink/20 bg-bg/60 p-3">
               <p className="font-mono text-xs uppercase tracking-wider text-muted">
-                Optimized Prompt
+                Optimized Prompt (Final)
               </p>
               <p className="mt-1 line-clamp-3 text-sm text-white/80">
                 {item.optimizedPrompt || "No optimized prompt available"}
               </p>
             </div>
 
-            <div className="mt-3 flex items-center justify-between gap-3">
+            {/* Timestamp and Action */}
+            <div className="mt-4 flex items-center justify-between gap-3">
               <p className="text-xs text-muted">{new Date(item.createdAt).toLocaleString()}</p>
               <button
                 type="button"

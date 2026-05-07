@@ -296,7 +296,7 @@ export default function IntentCard({ intent, onConfirm, onReject }) {
       </div>
 
       <p className="mt-5 text-sm text-white/80">
-        You want to {displayEnglishText(draft.task)} in {displayEnglishText(draft.outputFormat)} format. Confirm?
+        {displayEnglishText(draft.task)} in {displayEnglishText(draft.outputFormat)} format. Confirm?
       </p>
 
       <div className="mt-6 flex flex-wrap gap-2">

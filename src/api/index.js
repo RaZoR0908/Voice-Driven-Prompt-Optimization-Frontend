@@ -14,6 +14,7 @@ export const generatePrompt = (payload, sessionId) =>
 export const getHistory = (sessionId) =>
   api.get(`/api/chat/history?sessionId=${sessionId}`);
 export const getMemoryGraph = () => api.get("/api/memory/graph");
-export const getMemoryCards = () => api.get("/api/memory/cards");
+export const getMemoryCards = (sessionId) =>
+  api.get(`/api/memory/cards?sessionId=${sessionId}`);
 export const getDecisionLogs = (messageId) =>
   api.get(`/api/logs?messageId=${messageId}`);

@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { LoaderCircle } from "lucide-react";
 import { getMemoryCards, getMemoryGraph } from "../api";
 import MemoryGraph from "../components/MemoryGraph";
+import { getOrCreateSessionId } from "../lib/session";
 
 const domainClassMap = {
   marketing: "bg-pink/20 text-pink",
@@ -18,6 +19,7 @@ function domainBadgeClass(domain) {
 }
 
 export default function Memory() {
+  const [sessionId] = useState(() => getOrCreateSessionId());
   const [graphData, setGraphData] = useState({ nodes: [], edges: [] });
   const [cards, setCards] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -30,7 +32,7 @@ export default function Memory() {
       try {
         const [graphResponse, cardsResponse] = await Promise.all([
           getMemoryGraph(),
-          getMemoryCards(),
+          getMemoryCards(sessionId),
         ]);
         setGraphData(graphResponse.data || { nodes: [], edges: [] });
         setCards(cardsResponse.data || []);
@@ -45,7 +47,7 @@ export default function Memory() {
     };
 
     load();
-  }, []);
+  }, [sessionId]);
 
   return (
     <section className="mx-auto w-full max-w-6xl px-4 py-8 md:px-0">
@@ -53,7 +55,8 @@ export default function Memory() {
         MEMORY GRAPH
       </h1>
       <p className="mt-2 text-sm text-muted">
-        Graph visualization, memory creation, memory update, and final memory output.
+        Graph visualization, memory creation, memory update, and final memory output for session{' '}
+        <span className="font-mono text-pink-light">{sessionId}</span>
       </p>
 
       <div className="mt-6 overflow-hidden rounded-xl border border-pink/20 bg-[#0a0a0f] p-4 backdrop-blur-md">

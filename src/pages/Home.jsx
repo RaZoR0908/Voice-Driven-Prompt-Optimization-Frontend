@@ -345,7 +345,7 @@ export default function Home() {
         <div className="animate-fadeIn rounded-3xl border border-border bg-surface/70 px-5 py-8 text-center backdrop-blur-md md:px-8 md:py-10">
           <LoaderCircle className="mx-auto animate-spin text-pink" size={36} />
           <p className="mt-4 font-mono text-sm text-pink-light">
-            Transcribing your voice...
+            {sourceMode === "audio" ? "Transcribing your voice..." : "Transcribing your message..."}
           </p>
           <p className="mt-2 text-sm text-muted">
             Detecting language and extracting intent
