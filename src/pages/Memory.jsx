@@ -49,6 +49,8 @@ export default function Memory() {
     load();
   }, [sessionId]);
 
+  const hasMemory = !loading && cards.length > 0;
+
   return (
     <section className="mx-auto w-full max-w-6xl px-4 py-8 md:px-0">
       <h1 className="font-mono text-xl text-pink md:text-2xl">
@@ -59,15 +61,21 @@ export default function Memory() {
         <span className="font-mono text-pink-light">{sessionId}</span>
       </p>
 
-      <div className="mt-6 overflow-hidden rounded-xl border border-pink/20 bg-[#0a0a0f] p-4 backdrop-blur-md">
-        {error ? (
-          <div className="rounded-lg border border-danger/30 bg-danger/10 p-4 text-sm text-danger">
-            {error}
-          </div>
-        ) : (
-          <MemoryGraph graphData={graphData} loading={loading} />
-        )}
-      </div>
+      {hasMemory ? (
+        <div className="mt-6 overflow-hidden rounded-xl border border-pink/20 bg-[#0a0a0f] p-4 backdrop-blur-md">
+          {error ? (
+            <div className="rounded-lg border border-danger/30 bg-danger/10 p-4 text-sm text-danger">
+              {error}
+            </div>
+          ) : (
+            <MemoryGraph graphData={graphData} loading={loading} />
+          )}
+        </div>
+      ) : (
+        <div className="mt-6 rounded-xl border border-border bg-surface/70 p-6 text-center">
+          <p className="text-sm text-muted">No memory graph available yet.</p>
+        </div>
+      )}
 
       <div className="mt-8">
         <h2 className="font-mono text-sm uppercase tracking-widest text-pink-light">
@@ -82,8 +90,10 @@ export default function Memory() {
         )}
 
         {!loading && cards.length === 0 && !error && (
-          <div className="mt-4 rounded-xl border border-border bg-surface/70 p-6 text-sm text-muted">
-            No memories saved yet.
+          <div className="mt-4 rounded-xl border border-border bg-surface/70 p-6 text-center">
+            <p className="text-sm text-muted">
+              No memories saved yet. Complete a chat interaction on the home page to create memories.
+            </p>
           </div>
         )}
 
