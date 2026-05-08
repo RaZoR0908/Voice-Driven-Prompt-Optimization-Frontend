@@ -4,7 +4,11 @@ const api = axios.create({
   baseURL: import.meta.env.VITE_API_BASE_URL,
 });
 
-export const submitVoice = (formData) => api.post("/api/voice/input", formData);
+export const submitVoice = (formData) => {
+  // Add client timestamp in ISO format
+  formData.append("clientTimestamp", new Date().toISOString());
+  return api.post("/api/voice/input", formData);
+};
 export const generatePrompt = (payload, sessionId) =>
   api.post("/api/prompt/generate", payload, {
     headers: {
