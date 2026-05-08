@@ -5,8 +5,11 @@ const api = axios.create({
 });
 
 export const submitVoice = (formData) => {
-  // Add client timestamp in ISO format
-  formData.append("clientTimestamp", new Date().toISOString());
+  // Add client timestamp and timezone offset
+  const now = new Date();
+  formData.append("clientTimestamp", now.toISOString());
+  // Get timezone offset in minutes (e.g., -330 for IST = UTC+5:30)
+  formData.append("clientTimezoneOffset", now.getTimezoneOffset());
   return api.post("/api/voice/input", formData);
 };
 export const generatePrompt = (payload, sessionId) =>
